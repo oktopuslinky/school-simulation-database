@@ -1,4 +1,4 @@
-import sys
+import sys, sqlite3, faker, logging
 
 class Item:
     def __init__(self, name=None):
