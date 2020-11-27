@@ -3,6 +3,26 @@ import sys, sqlite3, faker, logging
 class Item:
     def __init__(self, name=None):
         self.name = name
+
+'''
+** New Data Structure**
+
+courses					
+course_id PRIMARY KEY	student_id PRIMARY KEY	    teacher_id PRIMARY KEY	    course_name TEXT
+
+students			
+student_id PRIMARY KEY	course_id PRIMARY KEY	teacher_id PRIMARY KEY	student_name TEXT
+	                    Values will be pulled from course table	Values 
+                        will be pulled from course table	
+
+teachers		
+teacher_id PRIMARY KEY	course_id PRIMARY KEY	teacher_name TEXT
+	                    Values will be pulled 
+                        from course table	
+'''
+
+
+'----------------------------'
 '''
 ** DATA STRUCTURE **
 
@@ -51,6 +71,7 @@ teachers[
 |Course2|        |        |
 |-------------------------|
 '''
+
 class Course(Item):
     def __init__(self, name):
         super().__init__(name)
@@ -140,20 +161,62 @@ class TakeInput():
                     print("Please try again.")
             self.the_user_input = user_input
 
-class MenuController():
+class Controller():
     def __init__(self):
-        #[{name: "", courses: ["", ""], students: ["", ""]}]
-        self.teacher_list = list()
+        self.database = Database()
+        self.database.create_tables()
 
-        #[{name: "", courses: ["", ""], teachers: ["",""]}]
-        self.student_list = list()
+    def run(self):
+        print("Running")
 
-        #["courseName1", etc]
-        self.course_list = list()
-        self.done = False
+        while self.done is False:
+            self.disp_action_menu()
+            possible_choices = [1,2,3,4,5,6,7]
 
-        self.user_choice = 0
+            self.user_choice = TakeInput("int", "Insert Choice").the_user_input
+            self.redirect_user()
 
+class Database():
+    def __init__(self, action=None):
+        self.conn = sqlite3.connect("school.db")
+        self.c =  self.conn.cursor()
+        self.action = action
+
+    def create_tables(self):
+        self.c.executescript(
+            '''
+                CREATE TABLE IF NOT EXISTS courses(
+                    course_id INTEGER PRIMARY KEY,
+                    student_id INTEGER,
+                    teacher_id INTEGER
+                    course_name TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS students(
+                    student_id INTEGER PRIMARY KEY,
+                    course_id INTEGER,
+                    teacher_id INTEGER,
+                    student_name TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS teachers(
+                    teacher_id INTEGER PRIMARY KEY,
+                    course_id INTEGER,
+                    teacher_name TEXT
+                )
+            '''
+        )
+
+        self.conn.commit()
+
+    def read_and_return(self):
+        self.c.execute(
+            '''
+                SELECT * FROM school
+            '''
+        )
+
+class SchoolActions():
     def search(self, the_type=None, the_item=None, the_list=None, the_key=None):
         item_exists = False
         for an_item in the_list:
@@ -166,17 +229,7 @@ class MenuController():
                     item_exists = True
 
         return item_exists
-        
-    def run(self):
-        print("Running")
-        
-        while self.done is False:
-            self.disp_action_menu()
-            possible_choices = [1,2,3,4,5,6,7]
-
-            self.user_choice = TakeInput("int", "Insert Choice").the_user_input
-            self.redirect_user()
-
+    
     def add_course(self):
         course_name = input("What is the name of the new course?")
         course_exists = self.search("dict_in_list", course_name, self.course_list, "Course")
@@ -376,6 +429,19 @@ class MenuController():
             for person in course[key]:
                 if person == person_name:
                     course[key].remove(person)
+class Menu():
+    def __init__(self):
+        #[{name: "", courses: ["", ""], students: ["", ""]}]
+        self.teacher_list = list()
+
+        #[{name: "", courses: ["", ""], teachers: ["",""]}]
+        self.student_list = list()
+
+        #["courseName1", etc]
+        self.course_list = list()
+        self.done = False
+
+        self.user_choice = 0
 
     def get_max_lengths(self):
         #courses, teachers, students
@@ -556,5 +622,5 @@ class MenuController():
         print("Have a nice day.")
         sys.exit()
 
-the_menu = MenuController()
-the_menu.run()
+program = Controller()
+program.run()
