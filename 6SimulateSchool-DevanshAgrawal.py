@@ -1,4 +1,5 @@
 import sys, sqlite3, faker, logging
+from prettytable import PrettyTable
 
 class Item:
     def __init__(self, name=None):
@@ -7,18 +8,15 @@ class Item:
 '''
 ** New Data Structure**
 
-courses					
-course_id PRIMARY KEY	student_id PRIMARY KEY	    teacher_id PRIMARY KEY	    course_name TEXT
+courses     [[1, 1, 2, "CS2"]]
+course_id INTEGER PRIMARY KEY	student_id PRIMARY KEY	    teacher_id PRIMARY KEY	    course_name TEXT
 
-students			
-student_id PRIMARY KEY	course_id PRIMARY KEY	teacher_id PRIMARY KEY	student_name TEXT
-	                    Values will be pulled from course table	Values 
-                        will be pulled from course table	
+students    [[1, "Devansh Agrawal"]]			
+student_id INTEGER PRIMARY KEY AUTOINCREMENT	student_name TEXT
 
-teachers		
-teacher_id PRIMARY KEY	course_id PRIMARY KEY	teacher_name TEXT
-	                    Values will be pulled 
-                        from course table	
+teachers    [[2, "Dev Ag"]]
+teacher_id INTEGER PRIMARY KEY AUTOINCREMENT    teacher_name TEXT
+
 '''
 
 
@@ -165,16 +163,58 @@ class Controller():
     def __init__(self):
         self.database = Database()
         self.database.create_tables()
+        
+        #self.school_actions = SchoolActions()
+        self.menu = Menu()
 
+        self.done = False
+
+        self.user_choice = 0
+        
     def run(self):
-        print("Running")
-
+        print('')
         while self.done is False:
-            self.disp_action_menu()
-            possible_choices = [1,2,3,4,5,6,7]
+            #goes through options dict, prints the data out per entry
+            for i, option in self.menu.options.items():
+                print(f'{i}) {option["desc"]}')
 
-            self.user_choice = TakeInput("int", "Insert Choice").the_user_input
-            self.redirect_user()
+            choice_valid = False
+            while choice_valid == False:
+                self.user_choice = TakeInput("int", "Insert Choice").the_user_input
+                if self.user_choice in range(1,9):
+                    choice_valid = True
+
+            self.menu.options.get(self.user_choice)['action']()
+            
+            '''#self.redirect_user()
+    
+    def redirect_user(self):
+        if self.user_choice == 1:
+            self.school_actions.add_course()
+
+        elif self.user_choice == 2:
+            self.school_actions.add_person()
+
+        elif self.user_choice == 3:
+            self.school_actions.remove_course()
+
+        elif self.user_choice == 4:
+            self.school_actions.remove_person()
+
+        elif self.user_choice == 5:
+            self.school_actions.assign_course()
+
+        elif self.user_choice == 6:
+            self.school_actions.unassign_course()
+        
+        elif self.user_choice == 7:
+            the_courses, the_students, the_teachers = self.database.read_and_return()
+            print(the_courses, the_students, the_teachers)
+            self.menu.disp_info()
+        
+        elif self.user_choice == 8:
+            #self.database.testing()
+            self.school_actions.quit()'''
 
 class Database():
     def __init__(self, action=None):
@@ -193,15 +233,12 @@ class Database():
                 );
 
                 CREATE TABLE IF NOT EXISTS students(
-                    student_id INTEGER PRIMARY KEY,
-                    course_id INTEGER,
-                    teacher_id INTEGER,
+                    student_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     student_name TEXT
                 );
 
                 CREATE TABLE IF NOT EXISTS teachers(
-                    teacher_id INTEGER PRIMARY KEY,
-                    course_id INTEGER,
+                    teacher_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     teacher_name TEXT
                 )
             '''
@@ -210,11 +247,58 @@ class Database():
         self.conn.commit()
 
     def read_and_return(self):
-        self.c.execute(
+        courses = self.c.execute(
             '''
-                SELECT * FROM school
+                SELECT * FROM courses
             '''
         )
+        courses_data = courses.fetchall()
+        
+        
+        students = self.c.execute(
+            '''
+                SELECT * FROM students
+            '''
+        )
+        students_data = students.fetchall()
+        
+
+
+        teachers = self.c.execute(
+            '''
+                SELECT * FROM teachers
+            '''
+        )
+        teachers_data = teachers.fetchall()
+
+        the_data = [courses_data, students_data, teachers_data]
+        for data in the_data:
+            index = 0
+            while index < len(data):
+                data[index] = list(data[index])
+                index += 1
+
+        return courses_data, students_data, teachers_data
+
+    def update_db(self, course_list=None, student_list=None, teachers_list=None):
+        #updated lists will update db tables
+        #update courses
+        #update students
+        #update teachers
+        #commit to db
+        pass
+
+    def testing(self):
+        self.c.execute(
+            '''
+                INSERT INTO students(student_name)
+                VALUES(
+                    "Dev Ag"
+                )
+            '''
+        )
+
+        self.conn.commit()
 
 class SchoolActions():
     def search(self, the_type=None, the_item=None, the_list=None, the_key=None):
@@ -429,24 +513,62 @@ class SchoolActions():
             for person in course[key]:
                 if person == person_name:
                     course[key].remove(person)
+
+    def quit(self):
+        print("Have a nice day.")
+        sys.exit()
+
 class Menu():
     def __init__(self):
-        #[{name: "", courses: ["", ""], students: ["", ""]}]
-        self.teacher_list = list()
+        self.database = Database()
+        self.course_list, self.student_list, self.teacher_list = self.database.read_and_return()
+        self.school_actions = SchoolActions()
+        self.options = {
+            1 : {'desc': 'Add a course to the system', 'action': lambda: self.school_actions.add_course()},
+            2 : {'desc': 'Add a person (teacher or student)', 'action': lambda: self.school_actions.add_person()},
+            3 : {'desc': 'Remove a course from the system', 'action': lambda: self.school_actions.remove_course()},
+            4 : {'desc': 'Remove a person (teacher or student)', 'action': lambda: self.school_actions.remove_person()},
+            5 : {'desc': 'Assign a course', 'action': lambda: self.school_actions.assign_course()},
+            6 : {'desc': 'Unassign a course', 'action': lambda: self.school_actions.unassign_course()},
+            7 : {'desc': 'Display the courses, teachers, and students', 'action': lambda: self.disp_info()},
+            8 : {'desc': 'Quit', 'action': lambda: self.school_actions.quit()}
+        }
 
-        #[{name: "", courses: ["", ""], teachers: ["",""]}]
-        self.student_list = list()
+    """
+    def disp_action_menu(self):
+        print(
+            '''
+            Welcome to the school simulation!
 
-        #["courseName1", etc]
-        self.course_list = list()
-        self.done = False
-
-        self.user_choice = 0
-
+            1) Add a course to the system
+            2) Add a person (teacher or student)
+            3) Remove a course from the system
+            4) Remove a person (teacher or student)
+            5) Assign a course
+            6) Unassign a course
+            7) Display the courses, teachers, and students
+            8) Quit
+            '''
+        )
+    """
     def get_max_lengths(self):
-        #courses, teachers, students
+        pass
+        '''
+        #courses, students, teachers
         max_lengths = [7,8,8]
 
+        passes = 0
+        while passes < 2:
+            if passes == 0:
+                pass
+            elif passes == 1:
+                pass
+            else:
+                pass
+            for row in self.course_list:
+                pass
+        '''
+        '''
         for row in self.course_list:
             if len(row["Course"]) > max_lengths[0]:
                 max_lengths[0] = len(row["Course"])
@@ -491,8 +613,20 @@ class Menu():
             passes +=1
         
         return max_lengths
-        
+    '''
     def disp_info(self):
+        student_table = PrettyTable()
+        teacher_table = PrettyTable()
+
+        student_table.field_names = ["Student ID", "Student Name"]
+        courses, students, teachers = self.database.read_and_return()
+        print(courses, students, teachers)
+        for student in students:
+            student_table.add_row(student)
+
+        print(student_table)
+        '''
+
         print("ALL STUDENTS AND TEACHERS ENROLLED IN A COURSE")
         max_lengths = self.get_max_lengths()
 
@@ -576,51 +710,9 @@ class Menu():
         print("╚" + (max_lengths[2] * "═") + "╝")
 
         print("---")
+        '''
 
-    def disp_action_menu(self):
-        print(
-            '''
-            Welcome to the school simulation!
-
-            1) Add a course to the system
-            2) Add a person (teacher or student)
-            3) Remove a course from the system
-            4) Remove a person (teacher or student)
-            5) Assign a course
-            6) Unassign a course
-            7) Display the courses, teachers, and students
-            8) Quit
-            '''
-        )
     
-    def redirect_user(self):
-        if self.user_choice == 1:
-            self.add_course()
-
-        elif self.user_choice == 2:
-            self.add_person()
-
-        elif self.user_choice == 3:
-            self.remove_course()
-
-        elif self.user_choice == 4:
-            self.remove_person()
-
-        elif self.user_choice == 5:
-            self.assign_course()
-
-        elif self.user_choice == 6:
-            self.unassign_course()
-        
-        elif self.user_choice == 7:
-            self.disp_info()
-        
-        elif self.user_choice == 8:
-            self.quit()
-
-    def quit(self):
-        print("Have a nice day.")
-        sys.exit()
-
+    
 program = Controller()
 program.run()
