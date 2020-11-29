@@ -84,21 +84,7 @@ class Person(Item):
         self.related_people = []
 
         self.identity = {"Name": self.name, "Courses": {}}
-'''
-class Student(Item):
-    def __init__(self, name):
-        super().__init__(name)
-        self.teachers = []
 
-        self.identity = {"Name": self.name, "Courses": {}}
-
-class Teacher(Item):
-    def __init__(self, name):
-        super().__init__(name)
-        self.students = []
-
-        self.identity = {"Name": self.name, "Courses": {}}
-'''
 class TakeInput():
     def __init__(self, input_type, input_disp_text):
         self.input_type = input_type
@@ -186,36 +172,6 @@ class Controller():
                     choice_valid = True
 
             self.menu.options.get(self.user_choice)['action']()
-            
-            '''#self.redirect_user()
-    
-    def redirect_user(self):
-        if self.user_choice == 1:
-            self.school_actions.add_course()
-
-        elif self.user_choice == 2:
-            self.school_actions.add_person()
-
-        elif self.user_choice == 3:
-            self.school_actions.remove_course()
-
-        elif self.user_choice == 4:
-            self.school_actions.remove_person()
-
-        elif self.user_choice == 5:
-            self.school_actions.assign_course()
-
-        elif self.user_choice == 6:
-            self.school_actions.unassign_course()
-        
-        elif self.user_choice == 7:
-            the_courses, the_students, the_teachers = self.database.read_and_return()
-            print(the_courses, the_students, the_teachers)
-            self.menu.disp_info()
-        
-        elif self.user_choice == 8:
-            #self.database.testing()
-            self.school_actions.quit()'''
 
 class Database():
     def __init__(self, action=None):
@@ -229,7 +185,7 @@ class Database():
                 CREATE TABLE IF NOT EXISTS courses(
                     course_id INTEGER PRIMARY KEY,
                     student_id INTEGER,
-                    teacher_id INTEGER
+                    teacher_id INTEGER,
                     course_name TEXT
                 );
 
@@ -325,13 +281,16 @@ class Database():
         pass
 
     def insert_item(self, item_type, new_data):
-        print(new_data)
         if item_type == 'course':
-            #append course into db
-            pass
+            self.c.execute(
+                '''
+                    INSERT INTO courses(course_name)
+                    VALUES(?);
+                ''', [new_data]
+            )
+            self.conn.commit()
 
         elif item_type == 'student':
-            print('its a student')
             self.c.execute(
                 '''
                     INSERT INTO students(student_name)
@@ -378,30 +337,9 @@ class SchoolActions():
         
         return item_exists
 
-    '''
-    def search(self, the_type=None, the_item=None, the_list=None, the_key=None):
-        item_exists = False
-        for an_item in the_list:
-            if the_type == "list":
-                if an_item == the_item:
-                    item_exists = True
-
-            elif the_type == "dict_in_list":
-                if an_item[the_key] == the_item:
-                    item_exists = True
-
-        return item_exists
-    '''
-
     def add_course(self):
-        course_name = input("What is the name of the new course?")
-        course_exists = self.search("dict_in_list", course_name, self.course_list, "Course")
-        if course_exists:
-            print("This course already exists in the system.")
-            print("You will be redirected to the main menu.")
-        else:
-            new_course = Course(course_name)
-            self.course_list.append(new_course.identity)
+        course_name = input("What is the name of the new course?: ")
+        self.database.insert_item('course', course_name)
     
     def add_person(self):
         print("Is this person a student or a teacher?")
@@ -415,32 +353,6 @@ class SchoolActions():
         elif person_type.lower() == "t":
             self.database.insert_item('teacher', person_name)
 
-        #self.database.wipe_and_update(courses, students, teachers)
-
-        '''
-        #Create person and append to list
-        print("Is this person a student or a teacher?")
-        person_type = TakeInput("person_type", 'Input "s" for student or "t" for teacher').the_user_input
-                
-        if person_type == "s" or person_type == "S":
-            the_list = self.student_list
-        elif person_type == "t" or person_type == "T":
-            the_list = self.teacher_list
-
-        person_name = input("What is the name of the new person?: ")
-        student_exists = self.search("dict_in_list", person_name, self.student_list, "Name")
-        if student_exists:
-            print("This student already exists in the system.")
-        else:
-            new_person = Person(person_name).identity
-            the_list.append(new_person)
-            print("The new person has been added to the system.")
-
-        if person_type == "s" or person_type == "S":
-            self.student_list = the_list
-        elif person_type == "t" or person_type == "T":
-            self.teacher_list = the_list
-        '''
     def remove_course(self):
         the_course = input("What course do you want to remove?: ")
         course_exists = self.search("dict_in_list", the_course, self.course_list, "Course")
@@ -645,87 +557,7 @@ class Menu():
             7 : {'desc': 'Display the courses, teachers, and students', 'action': lambda: self.disp_info()},
             8 : {'desc': 'Quit', 'action': lambda: self.school_actions.quit()}
         }
-
-    """
-    def disp_action_menu(self):
-        print(
-            '''
-            Welcome to the school simulation!
-
-            1) Add a course to the system
-            2) Add a person (teacher or student)
-            3) Remove a course from the system
-            4) Remove a person (teacher or student)
-            5) Assign a course
-            6) Unassign a course
-            7) Display the courses, teachers, and students
-            8) Quit
-            '''
-        )
-    """
-    def get_max_lengths(self):
-        pass
-        '''
-        #courses, students, teachers
-        max_lengths = [7,8,8]
-
-        passes = 0
-        while passes < 2:
-            if passes == 0:
-                pass
-            elif passes == 1:
-                pass
-            else:
-                pass
-            for row in self.course_list:
-                pass
-        '''
-        '''
-        for row in self.course_list:
-            if len(row["Course"]) > max_lengths[0]:
-                max_lengths[0] = len(row["Course"])
-
-            for item in row["Teachers"]:
-                if len(item) > max_lengths[1]:
-                    max_lengths[1] = len(item)
-
-            for item in row["Students"]:
-                if len(item) > max_lengths[2]:
-                    max_lengths[2] = len(item)
-
-        passes = 0
-        while passes < 2:
-            if passes == 0:
-                the_list = self.student_list
-                compare_value = max_lengths[2]
-                other_person_length = max_lengths[1]
-            elif passes == 1:
-                the_list = self.teacher_list
-                compare_value = max_lengths[1]
-                other_person_length = max_lengths[2]
-
-            for row in the_list:
-                if len(row["Name"]) > compare_value:
-                    compare_value = len(row["Name"])
-
-                for course in row["Courses"]:
-                    if len(course) > max_lengths[0]:
-                        max_lengths[0] = len(course)
-
-                    if len(row["Courses"][course]) > other_person_length:
-                        other_person_length = len(row["Courses"][course])
-            
-            if passes == 0:
-                max_lengths[2] = compare_value
-                max_lengths[1] = other_person_length
-            elif passes == 1:
-                max_lengths[1] = compare_value
-                max_lengths[2] = other_person_length
-            
-            passes +=1
-        
-        return max_lengths
-    '''
+    
     def id_to_name(self, id, check_list, list_index_id, list_index_name):
         #check_list is the list that the id is being checked against for the name
         #list_index id is the check_list index that has the id
@@ -760,47 +592,27 @@ class Menu():
         #student_names_list = self.string_to_list(students)
         #teacher_names_list = self.string_to_list(teachers)
         for course in courses:
-            '''
-            person_lists = [students, teachers]
-            student_names_list = list()
-            teacher_names_list = list()
-            current_person_names_list = [student_names_list, teacher_names_list]
-            passes = 0
-            while passes < 2:
-                current_person_ids = course['1']
-                current_person_ids_list = current_person_ids.split(',')
-                for person_id in current_person_ids_list:
-                    for person in person_lists[passes]:
-                        if person_id == person_lists[passes][0]:
-                            current_person_names_list[passes].append(person_lists[passes][1])
-            '''
-            
-            student_ids_list = self.string_to_list(course[1])
-            teacher_ids_list = self.string_to_list(course[2])
-
             student_names = list()
             teacher_names = list()
-            for student_id in student_ids_list:
-                student_name = self.id_to_name(student_id, students, 0, 1)
-                student_names.append(student_name)
+            student_names_string = ""
+            teacher_names_string = ""
 
-            for teacher_id in teacher_ids_list:
-                teacher_name = self.id_to_name(teacher_id, teachers, 0, 1)
-                teacher_names.append(teacher_name)
+            if course[1]:
+                student_ids_list = self.string_to_list(course[1])
+                for student_id in student_ids_list:
+                    student_name = self.id_to_name(student_id, students, 0, 1)
+                    student_names.append(student_name)
+                student_names_string = self.list_to_string(student_names)
+            
+            if course[2]:
+                teacher_ids_list = self.string_to_list(course[2])
+                for teacher_id in teacher_ids_list:
+                    teacher_name = self.id_to_name(teacher_id, teachers, 0, 1)
+                    teacher_names.append(teacher_name)
+                teacher_names_string = self.list_to_string(teacher_names)
 
-            student_names_string = self.list_to_string(student_names)
-            teacher_names_string = self.list_to_string(teacher_names)
-
+            
             course_table.add_row([course[0], student_names_string, teacher_names_string, course[3]])
-            
-            
-            #passes = 0
-            #lists = [student_names_list, teacher_names_list]
-            #strings = [student_names_list]
-            #while passes < 2:
-                #for person in lists[passes]:
-                    #student_names_string = person + ","
-            
 
         for student in students:
             student_table.add_row(student)
@@ -823,94 +635,5 @@ class Menu():
         else:
             print("There are no courses in the system.")
 
-        '''
-
-        print("ALL STUDENTS AND TEACHERS ENROLLED IN A COURSE")
-        max_lengths = self.get_max_lengths()
-
-        print(
-            "╔" + max_lengths[0] * "═" +
-            "╦" + max_lengths[1] * "═" +
-            "╦" + max_lengths[2] * "═" +
-            "╗"
-        )
-        print(
-            "║" +
-            "Course" + " " * (max_lengths[0]-6) + "║" + 
-            "Teachers" + " " * (max_lengths[1]-8) + "║" +
-            "Students" + " " * (max_lengths[2]-8) + 
-            "║"
-        )
-        print(
-            "╠" + (max_lengths[0] * "═") +
-            "╬" + (max_lengths[1] * "═") +
-            "╬" + (max_lengths[2] * "═") +
-            "╣"
-        )
-        
-        for course in self.course_list:
-            print(
-                "║" + course["Course"] + " " * (max_lengths[0]-len(course["Course"])) +
-                "║" + " " * max_lengths[1] +
-                "║" + " " * max_lengths[2] + "║"
-            )
-            for teacher in course["Teachers"]:
-                print(
-                    "║" + " " * max_lengths[0] + 
-                    "║" + teacher + " " * (max_lengths[1]-len(teacher)) +
-                    "║" + " " * max_lengths[2] + "║"
-                )
-
-            for student in course["Students"]:
-                print(
-                    "║" + " " * max_lengths[0] +
-                    "║" + " " * max_lengths[1] +
-                    "║" + student + " " * (max_lengths[2]-len(student)) + "║"
-                )
-            print(
-                "╟" + (max_lengths[0] * "═") +
-                "╫" + (max_lengths[1] * "═") +
-                "╫" + (max_lengths[2] * "═") +
-                "╫"
-            )
-        print(
-            "╚" + (max_lengths[0] * "═") +
-            "╩" + (max_lengths[1] * "═") +
-            "╩" + (max_lengths[2] * "═") +
-            "╝"
-        )
-
-        print("---")
-
-        print("ALL COURSES:")
-        print("╔" + max_lengths[0] * "═" + "╗")
-        for course in self.course_list:
-            print("║" + course["Course"] + " " * (max_lengths[0] - len(course["Course"])) + "║")
-
-        print("╚" + (max_lengths[0] * "═") + "╝")
-
-        print("---")
-
-        print("ALL TEACHERS:")
-        print("╔" + max_lengths[1] * "═" + "╗")
-        for teacher in self.teacher_list:
-            print("║" + teacher["Name"] + " " * (max_lengths[1] - len(teacher["Name"])) + "║")
-
-        print("╚" + (max_lengths[1] * "═") + "╝")
-
-        print("---")
-
-        print("ALL STUDENTS:")
-        print("╔" + max_lengths[2] * "═" + "╗")
-        for student in self.student_list:
-            print("║" + student["Name"] + " " * (max_lengths[2] - len(student["Name"])) + "║")
-
-        print("╚" + (max_lengths[2] * "═") + "╝")
-
-        print("---")
-        '''
-
-    
-    
 program = Controller()
 program.run()
