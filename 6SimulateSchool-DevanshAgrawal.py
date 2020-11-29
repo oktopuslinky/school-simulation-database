@@ -172,12 +172,13 @@ class Controller():
         self.user_choice = 0
         
     def run(self):
-        print('')
         while self.done is False:
+            print('---')
             #goes through options dict, prints the data out per entry
             for i, option in self.menu.options.items():
                 print(f'{i}) {option["desc"]}')
 
+            print('')
             choice_valid = False
             while choice_valid == False:
                 self.user_choice = TakeInput("int", "Insert Choice").the_user_input
@@ -614,17 +615,103 @@ class Menu():
         
         return max_lengths
     '''
+    def id_to_name(self, id, check_list, list_index_id, list_index_name):
+        #check_list is the list that the id is being checked against for the name
+        #list_index id is the check_list index that has the id
+        #list_index_name is the check_list index that has the name
+
+        for person in check_list:
+            if id == check_list[list_index_id]:
+                return check_list[list_index_name]
+
+    def string_to_list(self, the_string):
+        a_list = the_string.split(',')
+        return a_list
+        
+    def list_to_string(self, the_list):
+        a_string = ''
+        for item in the_list:
+            a_string = a_string + item + ","
+        a_string = a_string[:-1]
+        return 
+
     def disp_info(self):
+        course_table = PrettyTable()
         student_table = PrettyTable()
         teacher_table = PrettyTable()
-
+        course_table.field_names = ["Course ID", "Students Taking Course", "Teachers in Course", "Course Name"]
         student_table.field_names = ["Student ID", "Student Name"]
+        teacher_table.field_names = ["Teacher Id", "Teacher Name"]
+
         courses, students, teachers = self.database.read_and_return()
         print(courses, students, teachers)
+
+        #student_names_list = self.string_to_list(students)
+        #teacher_names_list = self.string_to_list(teachers)
+        for course in courses:
+            '''
+            person_lists = [students, teachers]
+            student_names_list = list()
+            teacher_names_list = list()
+            current_person_names_list = [student_names_list, teacher_names_list]
+            passes = 0
+            while passes < 2:
+                current_person_ids = course['1']
+                current_person_ids_list = current_person_ids.split(',')
+                for person_id in current_person_ids_list:
+                    for person in person_lists[passes]:
+                        if person_id == person_lists[passes][0]:
+                            current_person_names_list[passes].append(person_lists[passes][1])
+            '''
+            
+            student_ids_list = self.string_to_list(course[1])
+            teacher_ids_list = self.string_to_list(course[2])
+
+            student_names = list()
+            teacher_names = list()
+            for student_id in student_ids_list:
+                student_name = self.id_to_name(student_id, students, 0, 1)
+                student_names.append(student_name)
+
+            for teacher_id in teacher_ids_list:
+                teacher_name = self.id_to_name(teacher_id, teachers, 0, 1)
+                teacher_names.append(teacher_name)
+
+            student_names_string = self.list_to_string(student_names)
+            teacher_names_string = self.list_to_string(teacher_names)
+
+            course_table.add_row([course[0], student_names_string, teacher_names_string, course[3]])
+            
+            
+            #passes = 0
+            #lists = [student_names_list, teacher_names_list]
+            #strings = [student_names_list]
+            #while passes < 2:
+                #for person in lists[passes]:
+                    #student_names_string = person + ","
+            
+
         for student in students:
             student_table.add_row(student)
 
-        print(student_table)
+        for teacher in teachers:
+            teacher_table.add_row(teacher)
+
+        if students:
+            print(student_table)
+        else:
+            print("There are no students in the system.")
+
+        if teachers:
+            print(teacher_table)
+        else:
+            print("There are no teachers in the system.")
+
+        if courses:
+            print(course_table)
+        else:
+            print("There are no courses in the system.")
+
         '''
 
         print("ALL STUDENTS AND TEACHERS ENROLLED IN A COURSE")
