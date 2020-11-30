@@ -104,7 +104,16 @@ class TakeInput():
                     print("Please try again.")
             
             self.the_user_input = user_input
-            return
+
+        if self.input_type == "id":
+            while input_valid is False:
+                try:
+                    user_input = int(input(self.input_disp_text + ": #"))
+                    if user_input:
+                        input_valid = True
+                except:
+                    print("Please try again.")
+            self.the_user_input = user_input
 
         if self.input_type == "verify":
             possible_values = ["Y", "N", "y", "n"]
@@ -118,7 +127,6 @@ class TakeInput():
                     print("Please try again.")
             
             self.the_user_input = user_input
-            return
         
         if self.input_type == "str":
             input_valid = False
@@ -131,7 +139,6 @@ class TakeInput():
                     print("Please try again.")
 
             self.the_user_input = user_input
-            return
 
         if self.input_type == "person_type":
             possible_values = ["s", "S", "t", "T"]
@@ -145,6 +152,7 @@ class TakeInput():
                     print("Please try again.")
             self.the_user_input = user_input
 
+        return
 class Controller():
     def __init__(self):
         self.database = Database()
@@ -279,7 +287,19 @@ class Database():
     def keep_and_update(self):
         #keep the data, update specific record
         pass
+    def remove_item(self, item_type, the_id):
+        if item_type == 'course':
+            #remove course
+            pass
 
+        elif item_type == 'student':
+            #remove course
+            self.c.execute(f'DELETE FROM students WHERE student_id={the_id}')
+            self.conn.commit()
+
+        elif item_type == 'teacher':
+            self.c.execute(f'DELETE FROM teachers WHERE teacher_id={the_id}')
+            self.conn.commit()
     def insert_item(self, item_type, new_data):
         if item_type == 'course':
             self.c.execute(
@@ -324,21 +344,33 @@ class SchoolActions():
     def __init__(self):
         self.database = Database()
 
-    def search(self, check_value=None, check_id=None, a_list=None, list_name_index=None, list_id_index=None):
+    def search(self, check_value=None, a_list=None, list_name_index=None):
         #check_value is string value of item name
         #check_id is the index of item name
         #a_list is the list that is being inspected
         #list_name_index is the index in a_list that contains the string value of item name
         #list_id_index is the index in a_list htat contains the id of the item name
-        item_exists = False
+        '''item_exists = False
         for an_item in a_list:
             if check_value == an_item[list_name_index] and check_id == an_item[list_id_index]:
                 item_exists = True
         
-        return item_exists
+        return item_exists'''
+
+        hits = []
+        item_exists = False
+        for an_item in a_list:
+            #print(a_list[list_name_index])
+            #print(check_value)
+            if check_value == an_item[list_name_index]:
+                item_exists = True
+                hits.append(an_item)
+        
+        return item_exists, hits
 
     def add_course(self):
         course_name = input("What is the name of the new course?: ")
+        course_name = course_name.replace(" ", "-")
         self.database.insert_item('course', course_name)
     
     def add_person(self):
@@ -392,68 +424,48 @@ class SchoolActions():
         person_type = TakeInput("person_type", 'Input "s" for student or "t" for teacher').the_user_input
         if person_type.lower() == "s":
             the_list = students
-            id_index = 1
+            course_id_index = 1
         else:
             the_list = teachers
-            id_index = 2
+            course_id_index = 2
 
         the_person = input("What is the name of the person?: ")
         #search for person
+        exists, results = self.search(the_person, the_list, 1)
+        print(exists, results, the_person, the_list)
+        if exists:
+            #show hits, ask for id, remove this person
+            plurality = ""
+            if len(results) > 1:
+                plurality = "are"
+            else:
+                plurality = "is"
+                
+            print(f'There {plurality} {len(results)} people with this name.')
 
-        '''
-        #remove person from course, student, and teacher lists
-        print("Is this person a student or teacher?")
-        person_type = TakeInput("person_type", 'Input "s" for student or "t" for teacher').the_user_input
-
-        if person_type == "s" or person_type == "S":
-            the_list = self.student_list
-            person_course_key = "Students"
-            the_person_type = "student"
-
-        elif person_type == "t" or person_type == "T":
-            the_list = self.teacher_list
-            person_course_key = "Teachers"
-            the_person_type = "teacher"
-
-        the_person = input("What is the name of the person?: ")
-        #remove the student from all lists
-        person_exists = self.search("dict_in_list", the_person, the_list, "Name")
-        if person_exists:
-            #remove student from all lists
-            for a_course in self.course_list:
-                people_in_course = a_course[person_course_key]
-                for a_person in people_in_course:
-                    if a_person == the_person:
-                        people_in_course.remove(the_person)
-
-            student_done = False
-            teacher_done = False
-            for person in the_list:
-                if person["Name"] == the_person:
-                    the_list.remove(person)
-
-            if the_person_type == "student":
-                student_done = True
-            elif the_person_type == "teacher":
-                teacher_done = True
+            results_table = PrettyTable()
+            results_table.field_names = ["ID", "Name"]
+            possible_ids = []
+            for the_id, name in results:
+                results_table.add_row([f'#{the_id}', name])
+                possible_ids.append(the_id)
+            print(results_table)
             
-            if student_done == False:
-                the_list = self.student_list
-            elif teacher_done == False:
-                the_list = self.teacher_list
-
-            for person in the_list:
-                courses = person["Courses"]
-                for course_key in courses:
-                    people_in_course = courses[course_key]
-                    for a_person in people_in_course:
-                        if a_person == the_person:
-                            people_in_course.remove(a_person)
-
-            print("Person", the_person, "has been removed.")
+            print(possible_ids)
+            id_input_valid = False
+            while id_input_valid == False:
+                remove_id = TakeInput("id", "Which ID person do you want to remove?").the_user_input
+                print(remove_id)
+                if remove_id in possible_ids:
+                    id_input_valid = True
+            
+            if person_type.lower() == "s":
+                self.database.remove_item('student', remove_id)
+            else:
+                self.database.remove_item('teacher', remove_id)
+            
         else:
-            print("This person does not exist in the system.")
-    '''
+            print("This person does not exist in the system")
 
     def assign_course(self):
         #Get course name first
