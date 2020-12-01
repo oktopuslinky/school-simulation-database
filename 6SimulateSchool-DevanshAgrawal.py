@@ -287,10 +287,12 @@ class Database():
     def keep_and_update(self):
         #keep the data, update specific record
         pass
+
     def remove_item(self, item_type, the_id):
         if item_type == 'course':
             #remove course
-            pass
+            self.c.execute(f'DELETE FROM courses WHERE course_id={the_id}')
+            self.conn.commit()
 
         elif item_type == 'student':
             #remove course
@@ -300,6 +302,7 @@ class Database():
         elif item_type == 'teacher':
             self.c.execute(f'DELETE FROM teachers WHERE teacher_id={the_id}')
             self.conn.commit()
+
     def insert_item(self, item_type, new_data):
         if item_type == 'course':
             self.c.execute(
@@ -349,7 +352,6 @@ class SchoolActions():
         #check_id is the index of item name
         #a_list is the list that is being inspected
         #list_name_index is the index in a_list that contains the string value of item name
-        #list_id_index is the index in a_list htat contains the id of the item name
         '''item_exists = False
         for an_item in a_list:
             if check_value == an_item[list_name_index] and check_id == an_item[list_id_index]:
@@ -370,7 +372,6 @@ class SchoolActions():
 
     def add_course(self):
         course_name = input("What is the name of the new course?: ")
-        course_name = course_name.replace(" ", "-")
         self.database.insert_item('course', course_name)
     
     def add_person(self):
@@ -386,6 +387,45 @@ class SchoolActions():
             self.database.insert_item('teacher', person_name)
 
     def remove_course(self):
+        courses, students, teachers = self.database.read_and_return()
+
+        the_course = input("What course do you wish to remove?: ")
+        #first check if exists
+        exists, results = self.search(the_course, courses, 3)
+        if exists:
+            #show hits, ask for id, remove this person
+            plurality = ""
+            if len(results) > 1:
+                plurality1 = "are"
+                plurality2 = "courses"
+            else:
+                plurality1 = "is"
+                plurality2 = "course"
+
+            print(f'There {plurality1} {len(results)} {plurality2} with this name.')
+
+            results_table = PrettyTable()
+            results_table.field_names = ["ID", "Name"]
+            possible_ids = []
+            for the_id, the_student_id, the_teacher_id, name in results:
+                results_table.add_row([f'#{the_id}', name])
+                possible_ids.append(the_id)
+            print(results_table)
+            
+            print(possible_ids)
+            id_input_valid = False
+            while id_input_valid == False:
+                remove_id = TakeInput("id", "Which ID course do you wish to remove?").the_user_input
+                print(remove_id)
+                if remove_id in possible_ids:
+                    id_input_valid = True
+
+            self.database.remove_item('course', remove_id)
+
+        else:
+            print("This course does not exist in the system.")
+
+        '''
         the_course = input("What course do you want to remove?: ")
         course_exists = self.search("dict_in_list", the_course, self.course_list, "Course")
         if course_exists:
@@ -413,10 +453,12 @@ class SchoolActions():
         else:
             print("This course does not exist in the system.")
             print("You will be redirected to the main menu.")
-
+        '''
     def remove_person(self):
         #-------
         #######'STILL NEED TO FINISH'#########
+        #TODO: remove from course list
+
         #remove person from student list with corresponding student id in course list.
         courses, students, teachers = self.database.read_and_return()
 
@@ -437,11 +479,13 @@ class SchoolActions():
             #show hits, ask for id, remove this person
             plurality = ""
             if len(results) > 1:
-                plurality = "are"
+                plurality1 = "are"
+                plurality2 = "people"
             else:
-                plurality = "is"
-                
-            print(f'There {plurality} {len(results)} people with this name.')
+                plurality1 = "is"
+                plurality2 = "person"
+
+            print(f'There {plurality1} {len(results)} {plurality2} with this name.')
 
             results_table = PrettyTable()
             results_table.field_names = ["ID", "Name"]
