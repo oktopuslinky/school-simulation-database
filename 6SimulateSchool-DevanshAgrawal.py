@@ -387,6 +387,10 @@ class SchoolActions():
             self.database.insert_item('teacher', person_name)
 
     def remove_course(self):
+        course_exists , the_remove_id = self.item_remover("course")
+        if course_exists:
+            self.database.remove_item('course', the_remove_id)
+        '''
         courses, students, teachers = self.database.read_and_return()
 
         the_course = input("What course do you wish to remove?: ")
@@ -424,7 +428,7 @@ class SchoolActions():
 
         else:
             print("This course does not exist in the system.")
-
+        '''
         '''
         the_course = input("What course do you want to remove?: ")
         course_exists = self.search("dict_in_list", the_course, self.course_list, "Course")
@@ -454,11 +458,101 @@ class SchoolActions():
             print("This course does not exist in the system.")
             print("You will be redirected to the main menu.")
         '''
+    def item_remover(self, item_type):
+        #TODO: This will condense remove_person() and remove_course()
+        print('students')
+        print(item_type)
+        courses, students, teachers = self.database.read_and_return()
+        if item_type == "course":
+            the_list = courses
+            item_index = 3
+        elif item_type == "student":
+            the_list = students
+            item_index = 1
+        elif item_type == "teacher":
+            the_list = teachers
+            item_index = 1
+        
+        the_item = input(f"What is the name of the {item_type}?: ")
+        #search for person
+        exists, results = self.search(the_item, the_list, item_index)
+        print(exists, results, the_item, the_list)
+        if exists:
+            #show hits, ask for id, remove this person
+            plurality = ""
+            if len(results) > 1:
+                plurality1 = "are"
+                if item_type == "student" or item_type == "teacher":
+                    plurality2 = "people"
+                else:
+                    plurality2 = "courses"
+            else:
+                plurality1 = "is"
+                if item_type == "student" or item_type == "teacher":
+                    plurality2 = "person"
+                else:
+                    plurality2 = "course"
+
+            print(f'There {plurality1} {len(results)} {plurality2} with this name.')
+
+            results_table = PrettyTable()
+            results_table.field_names = ["ID", "Name"]
+            possible_ids = []
+            if item_type == "student" or item_type == "teacher":
+                for the_id, name in results:
+                    results_table.add_row([f'#{the_id}', name])
+                    possible_ids.append(the_id)
+            else:
+                for the_id, the_student_id, the_teacher_id, name in results:
+                    results_table.add_row([f'#{the_id}', name])
+                    possible_ids.append(the_id)
+            print(results_table)
+            
+            print(possible_ids)
+            id_input_valid = False
+            while id_input_valid == False:
+                remove_id = TakeInput("id", f"Which ID {item_type} do you want to remove?").the_user_input
+                print(remove_id)
+                if remove_id in possible_ids:
+                    id_input_valid = True
+            
+            return exists, remove_id
+            
+            '''
+            if person_type.lower() == "s":
+                self.database.remove_item('student', remove_id)
+            else:
+                self.database.remove_item('teacher', remove_id)
+            '''
+        else:
+            print(f"This {item_type} does not exist in the system")
+            return exists, None
+
     def remove_person(self):
         #-------
         #######'STILL NEED TO FINISH'#########
         #TODO: remove from course list
 
+        #courses, students, teachers = self.database.read_and_return()
+
+        print("Is this person a student or teacher?")
+        person_type = TakeInput("person_type", 'Input "s" for student or "t" for teacher').the_user_input
+        if person_type.lower() == "s":
+            #the_list = students
+            the_person_type = 'student'
+        else:
+            #the_list = teachers
+            the_person_type = 'teacher'
+
+        person_exists, the_remove_id = self.item_remover(the_person_type)
+
+        if person_exists:
+            if person_type.lower() == "s":
+                self.database.remove_item('student', the_remove_id)
+            else:
+                self.database.remove_item('teacher', the_remove_id)
+
+        '''
         #remove person from student list with corresponding student id in course list.
         courses, students, teachers = self.database.read_and_return()
 
@@ -466,10 +560,8 @@ class SchoolActions():
         person_type = TakeInput("person_type", 'Input "s" for student or "t" for teacher').the_user_input
         if person_type.lower() == "s":
             the_list = students
-            course_id_index = 1
         else:
             the_list = teachers
-            course_id_index = 2
 
         the_person = input("What is the name of the person?: ")
         #search for person
@@ -510,6 +602,7 @@ class SchoolActions():
             
         else:
             print("This person does not exist in the system")
+        '''
 
     def assign_course(self):
         #Get course name first
