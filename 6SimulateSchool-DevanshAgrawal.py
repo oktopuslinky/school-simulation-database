@@ -19,57 +19,6 @@ teacher_id INTEGER PRIMARY KEY AUTOINCREMENT    teacher_name TEXT
 
 '''
 
-
-'----------------------------'
-'''
-** DATA STRUCTURE **
-
-courses=[
-    {
-        Course: "courseName", 
-        Students: [students], 
-        Teachers: [teachers]
-    }, 
-    ETC
-]
-
-students[
-    {
-        Name: "name",
-        Courses: {
-            Course1: [Teacher1],
-            course2: [teacher2],
-            etc
-        }
-    },
-    ETC
-]
-
-teachers[
-    {
-        Name: "name",
-        Courses: {
-            course1: [students],
-            course2: [students]
-        }
-    }
-]
-'''
-
-'''
-** OUTPUT TABLE STRUCTURE **
-
-|-------------------------|
-|COURSES|TEACHERS|STUDENTS|
-|-------------------------|
-|Course1|Teacher1|Student1|
-|       |        |Student2|
-|       |Teacher2|Student1|
-|-------------------------|
-|Course2|        |        |
-|-------------------------|
-'''
-
 class Course(Item):
     def __init__(self, name):
         super().__init__(name)
@@ -352,12 +301,6 @@ class SchoolActions():
         #check_id is the index of item name
         #a_list is the list that is being inspected
         #list_name_index is the index in a_list that contains the string value of item name
-        '''item_exists = False
-        for an_item in a_list:
-            if check_value == an_item[list_name_index] and check_id == an_item[list_id_index]:
-                item_exists = True
-        
-        return item_exists'''
 
         hits = []
         item_exists = False
@@ -390,74 +333,7 @@ class SchoolActions():
         course_exists , the_remove_id = self.item_remover("course")
         if course_exists:
             self.database.remove_item('course', the_remove_id)
-        '''
-        courses, students, teachers = self.database.read_and_return()
 
-        the_course = input("What course do you wish to remove?: ")
-        #first check if exists
-        exists, results = self.search(the_course, courses, 3)
-        if exists:
-            #show hits, ask for id, remove this person
-            plurality = ""
-            if len(results) > 1:
-                plurality1 = "are"
-                plurality2 = "courses"
-            else:
-                plurality1 = "is"
-                plurality2 = "course"
-
-            print(f'There {plurality1} {len(results)} {plurality2} with this name.')
-
-            results_table = PrettyTable()
-            results_table.field_names = ["ID", "Name"]
-            possible_ids = []
-            for the_id, the_student_id, the_teacher_id, name in results:
-                results_table.add_row([f'#{the_id}', name])
-                possible_ids.append(the_id)
-            print(results_table)
-            
-            print(possible_ids)
-            id_input_valid = False
-            while id_input_valid == False:
-                remove_id = TakeInput("id", "Which ID course do you wish to remove?").the_user_input
-                print(remove_id)
-                if remove_id in possible_ids:
-                    id_input_valid = True
-
-            self.database.remove_item('course', remove_id)
-
-        else:
-            print("This course does not exist in the system.")
-        '''
-        '''
-        the_course = input("What course do you want to remove?: ")
-        course_exists = self.search("dict_in_list", the_course, self.course_list, "Course")
-        if course_exists:
-            #do two passes, one for student list, one for teacher list
-            passes = 0
-            while passes < 2:
-                if passes == 0:
-                    the_list = self.student_list
-                elif passes == 1:
-                    the_list = self.teacher_list
-
-                for person in the_list:
-                    person_courses = person["Courses"]
-                    for course in person_courses:
-                        if course == the_course:
-                            person_courses.pop(the_course)
-                
-                passes += 1
-
-            for a_course in self.course_list:
-                if a_course["Course"] == the_course:
-                    self.course_list.remove(a_course)
-            print("The course has successfully been removed from the system.")
-
-        else:
-            print("This course does not exist in the system.")
-            print("You will be redirected to the main menu.")
-        '''
     def item_remover(self, item_type):
         #TODO: This will condense remove_person() and remove_course()
         print('students')
@@ -517,16 +393,13 @@ class SchoolActions():
                     id_input_valid = True
             
             return exists, remove_id
-            
-            '''
-            if person_type.lower() == "s":
-                self.database.remove_item('student', remove_id)
-            else:
-                self.database.remove_item('teacher', remove_id)
-            '''
+
         else:
             print(f"This {item_type} does not exist in the system")
             return exists, None
+
+    def remove_person_from_course(self, person_type, person_id, course_id):
+        pass
 
     def remove_person(self):
         #-------
@@ -551,58 +424,6 @@ class SchoolActions():
                 self.database.remove_item('student', the_remove_id)
             else:
                 self.database.remove_item('teacher', the_remove_id)
-
-        '''
-        #remove person from student list with corresponding student id in course list.
-        courses, students, teachers = self.database.read_and_return()
-
-        print("Is this person a student or teacher?")
-        person_type = TakeInput("person_type", 'Input "s" for student or "t" for teacher').the_user_input
-        if person_type.lower() == "s":
-            the_list = students
-        else:
-            the_list = teachers
-
-        the_person = input("What is the name of the person?: ")
-        #search for person
-        exists, results = self.search(the_person, the_list, 1)
-        print(exists, results, the_person, the_list)
-        if exists:
-            #show hits, ask for id, remove this person
-            plurality = ""
-            if len(results) > 1:
-                plurality1 = "are"
-                plurality2 = "people"
-            else:
-                plurality1 = "is"
-                plurality2 = "person"
-
-            print(f'There {plurality1} {len(results)} {plurality2} with this name.')
-
-            results_table = PrettyTable()
-            results_table.field_names = ["ID", "Name"]
-            possible_ids = []
-            for the_id, name in results:
-                results_table.add_row([f'#{the_id}', name])
-                possible_ids.append(the_id)
-            print(results_table)
-            
-            print(possible_ids)
-            id_input_valid = False
-            while id_input_valid == False:
-                remove_id = TakeInput("id", "Which ID person do you want to remove?").the_user_input
-                print(remove_id)
-                if remove_id in possible_ids:
-                    id_input_valid = True
-            
-            if person_type.lower() == "s":
-                self.database.remove_item('student', remove_id)
-            else:
-                self.database.remove_item('teacher', remove_id)
-            
-        else:
-            print("This person does not exist in the system")
-        '''
 
     def assign_course(self):
         #Get course name first
