@@ -9,7 +9,7 @@ class Item:
 ** New Data Structure**
 
 courses     [[1, 1, 2, "CS2"]]
-course_id INTEGER PRIMARY KEY	student_id PRIMARY KEY	    teacher_id PRIMARY KEY	    course_name TEXT
+course_id INTEGER PRIMARY KEY AUTOINCREMENT     student_ids TEXT	    teacher_ids TEXT	    course_name TEXT
 
 students    [[1, "Devansh Agrawal"]]			
 student_id INTEGER PRIMARY KEY AUTOINCREMENT	student_name TEXT
@@ -141,8 +141,8 @@ class Database():
             '''
                 CREATE TABLE IF NOT EXISTS courses(
                     course_id INTEGER PRIMARY KEY,
-                    student_id INTEGER,
-                    teacher_id INTEGER,
+                    student_ids TEXT,
+                    teacher_ids TEXT,
                     course_name TEXT
                 );
 
@@ -194,6 +194,7 @@ class Database():
 
         return courses_data, students_data, teachers_data
 
+    """
     def wipe_and_update(self, course_list=None, student_list=None, teacher_list=None):
         #updated lists will update db tables
         #delete table data, replace with new
@@ -209,7 +210,7 @@ class Database():
         for course in course_list:
             self.c.execute(
                 f'''
-                    INSERT INTO courses(course_id, student_id, teacher_id, course_name)
+                    INSERT INTO courses(course_id, student_ids, teacher_ids, course_name)
                     VALUES({course[0]},{course[1]},{course[2]},{course[3]});
                 '''
             )
@@ -232,10 +233,18 @@ class Database():
                 '''
             )
             self.conn.commit()
+    """
 
-    def keep_and_update(self):
-        #keep the data, update specific record
-        pass
+    def update_data(self, update_id, new_data, item_type):
+        if item_type == "course":
+            #update data
+            self.c.execute(
+                f'''
+                    UPDATE courses
+                    SET student_ids = {new_data[1]}, teacher_ids = {new_data[2]}
+                    WHERE course_id = {update_id}
+                '''
+            )
 
     def remove_item(self, item_type, the_id):
         if item_type == 'course':
@@ -334,6 +343,37 @@ class SchoolActions():
         if course_exists:
             self.database.remove_item('course', the_remove_id)
 
+    def print_search_results(self, results, item_type):
+        plurality = ""
+        if len(results) > 1:
+            plurality1 = "are"
+            if item_type == "student" or item_type == "teacher":
+                plurality2 = "people"
+            else:
+                plurality2 = "courses"
+        else:
+            plurality1 = "is"
+            if item_type == "student" or item_type == "teacher":
+                plurality2 = "person"
+            else:
+                plurality2 = "course"
+
+        print(f'There {plurality1} {len(results)} {plurality2} with this name.')
+
+        results_table = PrettyTable()
+        results_table.field_names = ["ID", "Name"]
+        possible_ids = []
+        if item_type == "student" or item_type == "teacher":
+            for the_id, name in results:
+                results_table.add_row([f'#{the_id}', name])
+                possible_ids.append(the_id)
+        else:
+            for the_id, the_student_id, the_teacher_id, name in results:
+                results_table.add_row([f'#{the_id}', name])
+                possible_ids.append(the_id)
+        print(results_table)
+        return possible_ids
+
     def item_remover(self, item_type):
         #TODO: This will condense remove_person() and remove_course()
         print('students')
@@ -354,7 +394,8 @@ class SchoolActions():
         exists, results = self.search(the_item, the_list, item_index)
         print(exists, results, the_item, the_list)
         if exists:
-            #show hits, ask for id, remove this person
+            possible_ids = self.print_search_results(results, item_type)
+            """#show hits, ask for id, remove this person
             plurality = ""
             if len(results) > 1:
                 plurality1 = "are"
@@ -382,7 +423,7 @@ class SchoolActions():
                 for the_id, the_student_id, the_teacher_id, name in results:
                     results_table.add_row([f'#{the_id}', name])
                     possible_ids.append(the_id)
-            print(results_table)
+            print(results_table)"""
             
             print(possible_ids)
             id_input_valid = False
@@ -399,7 +440,37 @@ class SchoolActions():
             return exists, None
 
     def remove_person_from_course(self, person_type, person_id, course_id):
-        pass
+        courses, students, teachers = self.database.read_and_return()
+        for a_course in courses:
+            if a_course[0] == course_id:
+                the_course = a_course
+
+        if person_type.lower() == "s":
+            people_ids_string = a_course[1]
+        else:
+            people_ids_string = a_course[2]
+
+        string_options = Menu()
+        people_ids_list = string_options.string_to_list(people_ids_string)
+        
+        for a_person_id in people_ids_list:
+            if int(a_person_id) == person_id:
+                people_ids_list.remove(person_id)
+        
+        new_people_ids_string = string_options.list_to_string(people_ids_list)
+        
+        if person_type.lower() == "s":
+            the_course[1] = new_people_ids_string
+        else:
+            the_course[2] = new_people_ids_string
+        
+        '''
+        for course_index in range(len(courses)):
+            if courses[course_index][0] == course_id:
+                courses[course_index] = the_course
+        '''
+
+        self.database.update_data(course_id, the_course, "course")
 
     def remove_person(self):
         #-------
@@ -468,6 +539,37 @@ class SchoolActions():
             # other_type_list = self.student_list
 
     def unassign_course(self):
+        courses, students, teachers = self.database.read_and_return()
+        course_exists = False
+        while course_exists is False:
+            course_name = TakeInput("str", "What is the name of the course?").the_user_input
+            course_exists, course_results = self.search(course_name, courses, 3)
+            if course_exists is False:
+                print("This course does not exist in the system. Please try again.")
+            if course_exists is True:
+                break
+        
+        print("Is the course being unassigned from a student or teacher?")
+        person_type = TakeInput("person_type", 'Input "s" for student and "t" for teacher').the_user_input
+        if person_type == "s" or person_type == "S":
+            #the_list = self.student_list
+            search_index = 1
+        elif person_type == "t" or person_type == "T":
+            #the_list = self.teacher_list
+            search_index = 2
+
+        person_exists = False
+        while person_exists is False:    
+            person_name = input("What is the name of the person?: ")
+            person_exists, results = self.search(person_name, courses, search_index)
+            if person_exists is False:
+                print(f'Person {person_name} does not exist in course {course_name}. Please try again.')
+        
+        #display possible remove options, then remove
+        
+        self.remove_person_from_course(person_type, )
+
+        """
         course_exists = False
         while course_exists is False:
             course_name = TakeInput("str", "What is the name of the course?").the_user_input
@@ -507,7 +609,7 @@ class SchoolActions():
             for person in course[key]:
                 if person == person_name:
                     course[key].remove(person)
-
+        """
     def quit(self):
         print("Have a nice day.")
         sys.exit()
@@ -546,7 +648,7 @@ class Menu():
         for item in the_list:
             a_string = a_string + item + ","
         a_string = a_string[:-1]
-        return 
+        return a_string
 
     def disp_info(self):
         course_table = PrettyTable()
