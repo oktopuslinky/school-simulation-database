@@ -514,7 +514,7 @@ class SchoolActions():
             the_list = self.teacher_list
             
         person_exists = False
-        while person_exists is False:    
+        while person_exists is False:
             person_name = input("What is the name of the person?: ")
             person_exists = self.search("dict_in_list", person_name, the_list, "Name")
             if person_exists is False:
