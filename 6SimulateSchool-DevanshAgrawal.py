@@ -307,7 +307,6 @@ class SchoolActions():
 
     def search(self, check_value=None, a_list=None, list_name_index=None):
         #check_value is string value of item name
-        #check_id is the index of item name
         #a_list is the list that is being inspected
         #list_name_index is the index in a_list that contains the string value of item name
 
@@ -339,7 +338,7 @@ class SchoolActions():
             self.database.insert_item('teacher', person_name)
 
     def remove_course(self):
-        course_exists , the_remove_id = self.item_remover("course")
+        course_exists, the_remove_id = self.item_remover("course")
         if course_exists:
             self.database.remove_item('course', the_remove_id)
 
@@ -375,7 +374,7 @@ class SchoolActions():
         return possible_ids
 
     def item_remover(self, item_type):
-        #TODO: This will condense remove_person() and remove_course()
+        #This will condense remove_person() and remove_course()
         print('students')
         print(item_type)
         courses, students, teachers = self.database.read_and_return()
@@ -388,7 +387,7 @@ class SchoolActions():
         elif item_type == "teacher":
             the_list = teachers
             item_index = 1
-        
+
         the_item = input(f"What is the name of the {item_type}?: ")
         #search for person
         exists, results = self.search(the_item, the_list, item_index)
@@ -426,12 +425,7 @@ class SchoolActions():
             print(results_table)"""
             
             print(possible_ids)
-            id_input_valid = False
-            while id_input_valid == False:
-                remove_id = TakeInput("id", f"Which ID {item_type} do you want to remove?").the_user_input
-                print(remove_id)
-                if remove_id in possible_ids:
-                    id_input_valid = True
+            remove_id = self.get_remove_id(item_type, possible_ids)
             
             return exists, remove_id
 
@@ -439,7 +433,17 @@ class SchoolActions():
             print(f"This {item_type} does not exist in the system")
             return exists, None
 
-    def remove_person_from_course(self, person_type, person_id, course_id):
+    def get_remove_id(self, item_type, possible_ids):
+        id_input_valid = False
+        while id_input_valid == False:
+            remove_id = TakeInput("id", f"Which ID {item_type} do you want to remove?").the_user_input
+            print(remove_id)
+            if remove_id in possible_ids:
+                id_input_valid = True
+        
+        return remove_id
+
+    def remove_person_from_course(self, person_type, person_id, course_id=None):
         courses, students, teachers = self.database.read_and_return()
         for a_course in courses:
             if a_course[0] == course_id:
@@ -549,12 +553,17 @@ class SchoolActions():
             if course_exists is True:
                 break
         
+        course_possible_ids = self.print_search_results(course_results, "courses")
+        the_remove_course_id = get_remove_id('course', course_possible_ids)
+
         print("Is the course being unassigned from a student or teacher?")
         person_type = TakeInput("person_type", 'Input "s" for student and "t" for teacher').the_user_input
         if person_type == "s" or person_type == "S":
             #the_list = self.student_list
+            the_person_type = 'student'
             search_index = 1
         elif person_type == "t" or person_type == "T":
+            the_person_type = 'teacher'
             #the_list = self.teacher_list
             search_index = 2
 
@@ -565,9 +574,12 @@ class SchoolActions():
             if person_exists is False:
                 print(f'Person {person_name} does not exist in course {course_name}. Please try again.')
         
+        person_possible_ids = self.print_search_results(course_results, the_person_type)
+        the_remove_person_id = get_remove_id(the_person_type, person_possible_ids)
+
         #display possible remove options, then remove
         
-        self.remove_person_from_course(person_type, )
+        self.remove_person_from_course(person_type, the_remove_person_id, the_remove_course_id)
 
         """
         course_exists = False
