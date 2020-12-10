@@ -457,7 +457,12 @@ class SchoolActions():
                     people_ids_list.remove(a_person_id)
         
         elif action_type == 'assign':
-            people_ids_list.append(person_id)
+            print(person_id, people_ids_list)
+            if str(person_id) in people_ids_list:
+                print("This person already is in this course.")
+                return
+            else:
+                people_ids_list.append(person_id)
         
         new_people_ids_string = string_options.list_to_string(people_ids_list)
         
@@ -533,6 +538,8 @@ class SchoolActions():
         
         #see if person exists in course. If so, then exit out of method
         
+        self.course_actions(person_type, person_id, 'assign', course_id)
+        '''
         person_exists_course, results = self.search(str(person_name), courses, int(search_index))
         print(person_exists_course, results)
         if person_exists_course:
@@ -543,7 +550,7 @@ class SchoolActions():
             self.course_actions(person_type, person_id, 'assign', course_id)
         else:
             return
-
+        '''
     def unassign_course(self):
         courses, students, teachers = self.database.read_and_return()
         course_exists = False
@@ -631,10 +638,15 @@ class Menu():
         return a_list
         
     def list_to_string(self, the_list):
+        for item in the_list:
+            if item == '':
+                the_list.remove(item)
         a_string = ''
         for item in the_list:
             a_string = a_string + str(item) + ","
+            print("first part", a_string)
         a_string = a_string[:-1]
+        print("a_string: ", a_string)
         return a_string
 
     def disp_info(self):
