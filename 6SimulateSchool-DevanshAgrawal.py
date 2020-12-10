@@ -245,7 +245,15 @@ class Database():
             self.c.execute(
                 f'''
                     UPDATE courses
-                    SET student_ids = '{new_data[1]}', teacher_ids = NULL
+                    SET
+                        student_ids = '{new_data[1]}', 
+                        teacher_ids = CASE
+                            WHEN '{new_data[2]}' = 'None'
+                                THEN NULL
+                            WHEN '{new_data[2]}' = ''
+                                THEN NULL
+                            ELSE '{new_data[2]}'
+                        END
                     WHERE course_id = {update_id};
                 '''
             )
@@ -514,6 +522,7 @@ class SchoolActions():
         course_possible_ids = self.print_search_results(course_results, "course")
         course_id = self.get_item_id('course', course_possible_ids)
 
+        print('Is this course being assigned to a student or teacher?')
         person_type = TakeInput('person_type', 'Input "s" for student and "t" for teacher').the_user_input
         
         if person_type.lower() == "s":
@@ -624,7 +633,7 @@ class Menu():
         for person in check_list:
             print("id stuff: ", person[list_index_name])
             print("checking", the_id, person[list_index_id])
-            print(int(the_id) is int(person[list_index_id]))
+            #print(int(the_id) is int(person[list_index_id]))
             if int(the_id) == int(person[list_index_id]):
                 print('it works')
                 #return_value = person[list_index_name]
@@ -638,6 +647,9 @@ class Menu():
         return a_list
         
     def list_to_string(self, the_list):
+        if not the_list:
+            return ''
+            
         for item in the_list:
             if item == '':
                 the_list.remove(item)
@@ -678,7 +690,8 @@ class Menu():
                     print(student_name)
                 student_names_string = self.list_to_string(student_names)
             
-            if course[2]:
+            if course[2] is not None:
+                print('course[2] is ', course[2])
                 teacher_ids_list = self.string_to_list(course[2])
                 for teacher_id in teacher_ids_list:
                     teacher_name = self.id_to_name(teacher_id, teachers, 0, 1)
