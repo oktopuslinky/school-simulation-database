@@ -95,8 +95,9 @@ class TakeInput():
                 except:
                     print("Please try again.")
             self.the_user_input = user_input
-
+            
         return self.the_user_input
+
 class Controller():
     def __init__(self):
         self.database = Database()
