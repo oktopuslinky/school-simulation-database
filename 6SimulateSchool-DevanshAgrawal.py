@@ -1,4 +1,4 @@
-import sys, sqlite3, faker, logging
+import sys, sqlite3
 from prettytable import PrettyTable
 
 class Item:
@@ -6,7 +6,7 @@ class Item:
         self.name = name
 
 '''
-** New Data Structure**
+** Data Structure**
 
 courses     [[1, 1, 2, "CS2"]]
 course_id INTEGER PRIMARY KEY AUTOINCREMENT     student_ids TEXT	    teacher_ids TEXT	    course_name TEXT
@@ -22,17 +22,12 @@ teacher_id INTEGER PRIMARY KEY AUTOINCREMENT    teacher_name TEXT
 class Course(Item):
     def __init__(self, name):
         super().__init__(name)
-        self.teachers = []
-        self.students = []
-
-        self.identity = {"Course": self.name, "Teachers": self.teachers, "Students": self.students}
+        self.name = name
 
 class Person(Item):
     def __init__(self, name):
         super().__init__(name)
-        self.related_people = []
-
-        self.identity = {"Name": self.name, "Courses": {}}
+        self.name = name
 
 class TakeInput():
     def __init__(self, input_type, input_disp_text):
@@ -107,7 +102,6 @@ class Controller():
         self.database = Database()
         self.database.create_tables()
         
-        #self.school_actions = SchoolActions()
         self.menu = Menu()
 
         self.done = False
@@ -157,7 +151,6 @@ class Database():
                 )
             '''
         )
-
         self.conn.commit()
 
     def read_and_return(self):
@@ -168,15 +161,12 @@ class Database():
         )
         courses_data = courses.fetchall()
         
-        
         students = self.c.execute(
             '''
                 SELECT * FROM students
             '''
         )
         students_data = students.fetchall()
-        
-
 
         teachers = self.c.execute(
             '''
@@ -194,50 +184,10 @@ class Database():
 
         return courses_data, students_data, teachers_data
 
-    """
-    def wipe_and_update(self, course_list=None, student_list=None, teacher_list=None):
-        #updated lists will update db tables
-        #delete table data, replace with new
-
-        self.c.executescript(
-            '''
-                DELETE FROM courses;
-                DELETE FROM students;
-                DELETE FROM teachers;
-            '''
-        )
-        self.conn.commit()
-        for course in course_list:
-            self.c.execute(
-                f'''
-                    INSERT INTO courses(course_id, student_ids, teacher_ids, course_name)
-                    VALUES({course[0]},{course[1]},{course[2]},{course[3]});
-                '''
-            )
-            self.conn.commit()
-
-        for student in student_list:
-            self.c.execute(
-                f'''
-                    INSERT INTO students(student_id, student_name)
-                    VALUES({student[0]},{student[1]});
-                '''
-            )
-            self.conn.commit()
-
-        for teacher in teacher_list:
-            self.c.execute(
-                f'''
-                    INSERT INTO teachers(teacher_id, teacher_name)
-                    VALUES({teacher[0]},{teacher[1]});
-                '''
-            )
-            self.conn.commit()
-    """
-
     def update_data(self, update_id, new_data, item_type):
         #update_id: id of course
         #new_data: the new student and teacher ids strings
+        #item_type: the type of the item
         
         if item_type == "course":
             print(update_id, new_data, item_type)
@@ -266,11 +216,12 @@ class Database():
             self.conn.commit()
 
         elif item_type == 'student':
-            #remove course
+            #remove student
             self.c.execute(f'DELETE FROM students WHERE student_id={the_id}')
             self.conn.commit()
 
         elif item_type == 'teacher':
+            #remove teacher
             self.c.execute(f'DELETE FROM teachers WHERE teacher_id={the_id}')
             self.conn.commit()
 
@@ -302,18 +253,6 @@ class Database():
             )
             self.conn.commit()
 
-    def testing(self):
-        #This is the testing method that will add values to the table when testing.
-        self.c.execute(
-            '''
-                INSERT INTO students(student_name)
-                VALUES(
-                    "Dev Ag"
-                )
-            '''
-        )
-        self.conn.commit()
-
 class SchoolActions():
     def __init__(self):
         self.database = Database()
@@ -326,8 +265,6 @@ class SchoolActions():
         hits = []
         item_exists = False
         for an_item in a_list:
-            #print(a_list[list_name_index])
-            #print(check_value)
             if check_value == an_item[list_name_index]:
                 item_exists = True
                 hits.append(an_item)
@@ -336,19 +273,21 @@ class SchoolActions():
 
     def add_course(self):
         course_name = input("What is the name of the new course?: ")
-        self.database.insert_item('course', course_name)
+        new_course = Course(course_name)
+        self.database.insert_item('course', new_course.name)
     
     def add_person(self):
         print("Is this person a student or a teacher?")
         person_type = TakeInput("person_type", 'Input "s" for student or "t" for teacher').the_user_input
         courses, students, teachers = self.database.read_and_return()
         person_name = input("What is the name of the new person?: ")
-        #self.database.testing()
         if person_type.lower() == "s":
-            self.database.insert_item('student', person_name)
+            new_student = Person(person_name)
+            self.database.insert_item('student', new_student.name)
 
         elif person_type.lower() == "t":
-            self.database.insert_item('teacher', person_name)
+            new_teacher = Person(person_name)
+            self.database.insert_item('teacher', new_teacher.name)
 
     def remove_course(self):
         course_exists, the_remove_id = self.item_remover("course")
@@ -376,7 +315,6 @@ class SchoolActions():
         results_table.field_names = ["ID", "Name"]
         possible_ids = []
         if item_type == "student" or item_type == "teacher":
-            print(results)
             for the_id, name in results:
                 results_table.add_row([f'#{the_id}', name])
                 possible_ids.append(the_id)
@@ -384,13 +322,10 @@ class SchoolActions():
             for the_id, the_student_id, the_teacher_id, name in results:
                 results_table.add_row([f'#{the_id}', name])
                 possible_ids.append(the_id)
-        print(results_table)
         return possible_ids
 
     def item_remover(self, item_type):
         #This will condense remove_person() and remove_course()
-        print('students')
-        print(item_type)
         courses, students, teachers = self.database.read_and_return()
         if item_type == "course":
             the_list = courses
@@ -405,13 +340,9 @@ class SchoolActions():
         the_item = input(f"What is the name of the {item_type}?: ")
         #search for person
         exists, results = self.search(the_item, the_list, item_index)
-        print(exists, results, the_item, the_list)
         if exists:
             possible_ids = self.print_search_results(results, item_type)
-            
-            print(possible_ids)
             remove_id = self.get_item_id(item_type, possible_ids)
-            
             return exists, remove_id
 
         else:
@@ -422,7 +353,6 @@ class SchoolActions():
         id_input_valid = False
         while id_input_valid == False:
             item_id = TakeInput("id", f"Which ID {item_type} do you wish to act on?").the_user_input
-            print(item_id)
             if item_id in possible_ids:
                 id_input_valid = True
         
@@ -438,8 +368,6 @@ class SchoolActions():
         person_exists_in_course = False
         string_options = Menu()
         ids_list = string_options.string_to_list(the_course[search_index])
-        print(ids_list)
-        print(person_id)
         if str(person_id) in ids_list:
             person_exists_in_course = True
         
@@ -465,7 +393,6 @@ class SchoolActions():
                     people_ids_list.remove(a_person_id)
         
         elif action_type == 'assign':
-            print(person_id, people_ids_list)
             if str(person_id) in people_ids_list:
                 print("This person already is in this course.")
                 return
@@ -478,29 +405,18 @@ class SchoolActions():
             the_course[1] = new_people_ids_string
         else:
             the_course[2] = new_people_ids_string
-        
-        '''
-        for course_index in range(len(courses)):
-            if courses[course_index][0] == course_id:
-                courses[course_index] = the_course
-        '''
 
         self.database.update_data(course_id, the_course, "course")
 
     def remove_person(self):
-        #-------
-        #######'STILL NEED TO FINISH'#########
-        #TODO: remove from course list
-
-        #courses, students, teachers = self.database.read_and_return()
+        courses, students, teachers = self.database.read_and_return()
+        string_options = Menu()
 
         print("Is this person a student or teacher?")
         person_type = TakeInput("person_type", 'Input "s" for student or "t" for teacher').the_user_input
         if person_type.lower() == "s":
-            #the_list = students
             the_person_type = 'student'
         else:
-            #the_list = teachers
             the_person_type = 'teacher'
 
         person_exists, the_remove_id = self.item_remover(the_person_type)
@@ -508,8 +424,18 @@ class SchoolActions():
         if person_exists:
             if person_type.lower() == "s":
                 self.database.remove_item('student', the_remove_id)
+                for course in courses:
+                    #check each course and remove as necessary
+                    student_ids = string_options.string_to_list(course[1])
+                    if the_remove_id in student_ids:
+                        self.course_actions(person_type, the_remove_id, 'remove', course[0])
             else:
                 self.database.remove_item('teacher', the_remove_id)
+                for course in courses:
+                    #check each course and remove as necessary
+                    teacher_ids = string_options.string_to_list(course[2])
+                    if the_remove_id in teacher_ids:
+                        self.course_actions(person_type, the_remove_id, 'remove', course[0])
 
     def assign_course(self):
         courses, students, teachers = self.database.read_and_return()
@@ -544,22 +470,9 @@ class SchoolActions():
         person_possible_ids = self.print_search_results(person_results, the_person_type)
         #get_item_id, change course person ids.
         person_id = self.get_item_id(the_person_type, person_possible_ids)
-        
-        #see if person exists in course. If so, then exit out of method
-        
+        #take action
         self.course_actions(person_type, person_id, 'assign', course_id)
-        '''
-        person_exists_course, results = self.search(str(person_name), courses, int(search_index))
-        print(person_exists_course, results)
-        if person_exists_course:
-            print(f'Person {person_name} already exists in course {course_name}. You will now be redirected to the main menu.')
 
-        
-        if person_exists_course is False:
-            self.course_actions(person_type, person_id, 'assign', course_id)
-        else:
-            return
-        '''
     def unassign_course(self):
         courses, students, teachers = self.database.read_and_return()
         course_exists = False
@@ -577,12 +490,12 @@ class SchoolActions():
         print("Is the course being unassigned from a student or teacher?")
         person_type = TakeInput("person_type", 'Input "s" for student and "t" for teacher').the_user_input
         if person_type == "s" or person_type == "S":
-            #the_list = self.student_list
+            the_list = students
             the_person_type = 'student'
             search_index = 1
         elif person_type == "t" or person_type == "T":
+            the_list = teachers
             the_person_type = 'teacher'
-            #the_list = self.teacher_list
             search_index = 2
 
         person_exists = False
@@ -590,11 +503,10 @@ class SchoolActions():
             #person_id = self.get_item_id(the_person_type, person_possible_ids)
             person_name = input("What is the name of the person?: ")
             #need to split up string
-            person_exists, person_results = self.search(person_name, students, 1)
+            person_exists, person_results = self.search(person_name, the_list, 1)
             if person_exists is False:
-                print(f'Person {person_name} does not exist in the system. Please try again.')
+                print(f'{the_person_type.capitalize()} {person_name} does not exist in the system. Please try again.')
         
-        print(person_results)
         person_possible_ids = self.print_search_results(person_results, the_person_type)
         the_remove_person_id = self.get_item_id(the_person_type, person_possible_ids)
 
@@ -629,13 +541,9 @@ class Menu():
         #check_list is the list that the id is being checked against for the name
         #list_index_id is the check_list index that has the id
         #list_index_name is the check_list index that has the name
-        print("checklist", check_list)
         for person in check_list:
-            print("id stuff: ", person[list_index_name])
-            print("checking", the_id, person[list_index_id])
             #print(int(the_id) is int(person[list_index_id]))
             if int(the_id) == int(person[list_index_id]):
-                print('it works')
                 #return_value = person[list_index_name]
                 return person[list_index_name]
 
@@ -656,9 +564,7 @@ class Menu():
         a_string = ''
         for item in the_list:
             a_string = a_string + str(item) + ","
-            print("first part", a_string)
         a_string = a_string[:-1]
-        print("a_string: ", a_string)
         return a_string
 
     def disp_info(self):
@@ -670,7 +576,6 @@ class Menu():
         teacher_table.field_names = ["Teacher Id", "Teacher Name"]
 
         courses, students, teachers = self.database.read_and_return()
-        print(courses, students, teachers)
 
         #student_names_list = self.string_to_list(students)
         #teacher_names_list = self.string_to_list(teachers)
@@ -682,23 +587,18 @@ class Menu():
 
             if course[1]:
                 student_ids_list = self.string_to_list(course[1])
-                print("student_ids_list:", student_ids_list)
                 for student_id in student_ids_list:
                     student_name = self.id_to_name(student_id, students, 0, 1)
-                    print(student_name)
                     student_names.append(student_name)
-                    print(student_name)
                 student_names_string = self.list_to_string(student_names)
             
             if course[2] is not None:
-                print('course[2] is ', course[2])
                 teacher_ids_list = self.string_to_list(course[2])
                 for teacher_id in teacher_ids_list:
                     teacher_name = self.id_to_name(teacher_id, teachers, 0, 1)
                     teacher_names.append(teacher_name)
                 teacher_names_string = self.list_to_string(teacher_names)
             
-            print([course[0], student_names_string, teacher_names_string, course[3]])
             course_table.add_row([course[0], student_names_string, teacher_names_string, course[3]])
 
         for student in students:
